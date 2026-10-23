@@ -2,6 +2,8 @@
    Design tokens
    ========================================================================== */
 :root {
+    color-scheme: light;
+
     /* Gray scale */
     --color-gray-50: #f9fafb;
     --color-gray-100: #f3f4f6;
@@ -493,6 +495,7 @@ select {
     border-radius: 0;
     background: transparent;
     color: var(--color-text-label);
+    appearance: base-select;
 }
 
 .form-field--filename .form-field__control {
@@ -507,6 +510,41 @@ select {
 .form-field--format .form-field__control:focus {
     outline: none;
     box-shadow: none;
+}
+
+/* Zeropad / format dropdowns — blue option list (customizable select) */
+.form-field--zeropad .form-field__control::picker(select),
+.form-field--format .form-field__control::picker(select) {
+    appearance: base-select;
+    background: var(--color-bg-page);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    padding: var(--space-xs);
+    margin-top: var(--space-xs);
+}
+
+.form-field--zeropad .form-field__control::picker-icon,
+.form-field--format .form-field__control::picker-icon {
+    color: var(--color-text-label);
+}
+
+.form-field--zeropad option,
+.form-field--format option {
+    color: var(--color-text-primary);
+    background: var(--color-bg-page);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+}
+
+.form-field--zeropad option:hover,
+.form-field--format option:hover,
+.form-field--zeropad option:focus,
+.form-field--format option:focus,
+.form-field--zeropad option:checked,
+.form-field--format option:checked {
+    background: var(--color-accent);
+    color: var(--color-text-inverse);
 }
 
 /* ==========================================================================
