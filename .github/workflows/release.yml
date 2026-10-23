@@ -1,170 +1,180 @@
 name: Release
 
 # Trigger the workflow when a new tag is created
-# The tag should follow semantic versioning (e.g., v1.3.0, 1.4.0)
+# The tag should follow semantic versioning (e.g., v1.6.5, 1.6.5)
 on:
   push:
     tags:
       - 'v*'
       - '*.*.*'
 
+permissions:
+  contents: read
+
 jobs:
   build:
+    name: Build (${{ matrix.platform }})
     runs-on: ${{ matrix.os }}
-    
-    # Permissions needed in case electron-builder tries to publish
-    permissions:
-      contents: read
-    
-    # Build for multiple platforms in parallel
+
     strategy:
+      fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
         include:
           - os: windows-latest
-            platform: win
+            platform: windows
+            bundles: nsis,msi
           - os: macos-latest
-            platform: mac
-          - os: ubuntu-latest
+            platform: macos
+            bundles: dmg
+          - os: ubuntu-22.04
             platform: linux
-    
+            bundles: appimage,deb
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: package-lock.json
-      
-      - name: Install dependencies
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libxdo-dev \
+            libssl-dev \
+            patchelf \
+            libfuse2 \
+            build-essential
+
+      - name: Install npm dependencies
         run: npm ci
-      
-      - name: Build application
-        run: npm run build
-        env:
-          # Disable automatic publishing by electron-builder
-          # We handle releases through the release job instead
-          PUBLISH: never
-      
+
       - name: Extract version from package.json
         id: get_version
+        shell: bash
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
-        shell: bash
-      
-      - name: Prepare release artifacts
-        shell: bash
-        run: |
-          # Create a directory for artifacts
-          mkdir -p release-artifacts
-          
-          # Copy built files based on platform
-          if [ "${{ matrix.platform }}" == "win" ]; then
-            # Windows: Copy NSIS installer and related files
-            cp "dist/Frame Chopper Setup ${{ steps.get_version.outputs.version }}.exe" release-artifacts/ || true
-            cp "dist/latest.yml" release-artifacts/ || true
-            # Also copy the blockmap if it exists
-            cp "dist/"*.blockmap release-artifacts/ || true
-          elif [ "${{ matrix.platform }}" == "mac" ]; then
-            # macOS: Copy DMG file
-            cp "dist/"*.dmg release-artifacts/ || true
-            cp "dist/latest.yml" release-artifacts/ || true
-          elif [ "${{ matrix.platform }}" == "linux" ]; then
-            # Linux: Copy AppImage file
-            cp "dist/"*.AppImage release-artifacts/ || true
-            cp "dist/latest.yml" release-artifacts/ || true
-          fi
-      
+
+      - name: Build Tauri application
+        run: npm run build:tauri -- --bundles ${{ matrix.bundles }}
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}-build-${{ steps.get_version.outputs.version }}
-          path: release-artifacts/*
+          path: |
+            src-tauri/target/release/bundle/**/*.msi
+            src-tauri/target/release/bundle/**/*.exe
+            src-tauri/target/release/bundle/**/*.dmg
+            src-tauri/target/release/bundle/**/*.AppImage
+            src-tauri/target/release/bundle/**/*.deb
+          if-no-files-found: error
           retention-days: 30
-  
+
   release:
+    name: Publish release
     needs: build
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
-    
-    # Permissions needed to create releases
+
     permissions:
       contents: write
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
       - name: Extract version from package.json
         id: get_version
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
-      
+
       - name: Download Windows build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: win-build-${{ steps.get_version.outputs.version }}
-          path: ./release-artifacts/win
-      
+          name: windows-build-${{ steps.get_version.outputs.version }}
+          path: ./release-artifacts/windows
+        continue-on-error: true
+
       - name: Download macOS build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: mac-build-${{ steps.get_version.outputs.version }}
-          path: ./release-artifacts/mac
+          name: macos-build-${{ steps.get_version.outputs.version }}
+          path: ./release-artifacts/macos
         continue-on-error: true
-      
+
       - name: Download Linux build artifacts
         uses: actions/download-artifact@v4
         with:
           name: linux-build-${{ steps.get_version.outputs.version }}
           path: ./release-artifacts/linux
         continue-on-error: true
-      
+
       - name: List downloaded artifacts
         shell: bash
         run: |
           echo "Windows artifacts:"
-          ls -la ./release-artifacts/win/ || echo "No Windows artifacts found"
-          echo ""
+          find ./release-artifacts/windows -type f -printf '  %p (%s bytes)\n' 2>/dev/null || true
           echo "macOS artifacts:"
-          ls -la ./release-artifacts/mac/ || echo "No macOS artifacts found"
-          echo ""
+          find ./release-artifacts/macos -type f -printf '  %p (%s bytes)\n' 2>/dev/null || true
           echo "Linux artifacts:"
-          ls -la ./release-artifacts/linux/ || echo "No Linux artifacts found"
+          find ./release-artifacts/linux -type f -printf '  %p (%s bytes)\n' 2>/dev/null || true
+
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: Release ${{ steps.get_version.outputs.version }}
+          name: Frame Chopper ${{ steps.get_version.outputs.version }}
           body: |
-            ## Frame Chopper ${{ steps.get_version.outputs.version }}
-            
-            ### Changes
-            - See commit history for details
-            
+            ## Frame Chopper ${{ steps.get_version.outputs.version }} — Rust + Tauri
+
+            Tiny native build powered by Rust and Tauri 2. The executable is only a few megabytes because Tauri uses the system webview instead of bundling Chromium.
+
+            This Rust/Tauri backend was converted from the original Electron app with the help of AI coding assistants.
+
             ### Downloads
-            - Windows installer available in the assets below
-            - macOS installer available in the assets below (if built)
-            - Linux AppImage available in the assets below (if built)
+            - **Windows**: NSIS installer (`.exe`) or MSI package
+            - **macOS**: `.dmg`
+            - **Linux**: `.AppImage` or `.deb`
+
             ### Installation
             1. Download the installer for your platform
-            2. Run the installer and follow the on-screen instructions
-            3. Make sure FFmpeg is installed on your system before using the app
-            
-            **Note**: FFmpeg must be installed separately. See the README for installation instructions.
+            2. Run it and follow the on-screen instructions
+            3. Install FFmpeg if prompted — the app shows the right command for your OS
+
+            **Note**: FFmpeg and ffprobe are required separately. FFmpeg is not bundled with the installer.
           files: |
-            release-artifacts/win/*
-            release-artifacts/mac/*
-            release-artifacts/linux/*
+            release-artifacts/windows/**/*
+            release-artifacts/macos/**/*
+            release-artifacts/linux/**/*
           fail_on_unmatched_files: false
           draft: false
           prerelease: false
