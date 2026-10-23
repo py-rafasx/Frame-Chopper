@@ -1,6 +1,6 @@
 {
   "name": "frame-chopper",
-  "version": "1.6.5",
+  "version": "1.7.0",
   "description": "Videos to frames converter",
   "main": "electron/main.js",
   "scripts": {
