@@ -562,3 +562,408 @@ body.exporting * {
     transition: none !important;
 }
 
+/* ==========================================================================
+   FFmpeg setup gate
+   ========================================================================== */
+
+.ffmpeg-gate {
+    position: fixed;
+    top: calc(2.5rem + 1px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    overflow-y: auto;
+    padding: var(--space-lg) var(--space-md) var(--space-lg);
+    background:
+        radial-gradient(115% 80% at 50% 0%, rgba(0, 123, 255, 0.07), transparent 62%),
+        var(--color-bg-page);
+}
+
+.ffmpeg-gate[hidden] {
+    display: none;
+}
+
+.ffmpeg-gate__content {
+    width: 100%;
+    max-width: 400px;
+    margin: auto;
+    padding: 1rem 1.05rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: 0.875rem;
+    background: var(--color-bg-page);
+    box-shadow:
+        0 20px 45px -28px rgba(17, 24, 39, 0.45),
+        0 2px 6px -2px rgba(17, 24, 39, 0.08);
+}
+
+/* Header */
+.ffmpeg-gate__header {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.ffmpeg-gate__mark {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    background: linear-gradient(140deg, rgba(0, 123, 255, 0.16), rgba(0, 123, 255, 0.05));
+    color: var(--color-accent);
+}
+
+.ffmpeg-gate__mark svg {
+    width: 1.35rem;
+    height: 1.35rem;
+}
+
+.ffmpeg-gate__heading {
+    min-width: 0;
+}
+
+.ffmpeg-gate__title {
+    font-size: 1.05rem;
+    font-weight: var(--font-weight-bold);
+    line-height: 1.25;
+}
+
+.ffmpeg-gate__text {
+    color: var(--color-text-label);
+    font-size: var(--font-size-caption);
+    line-height: 1.35;
+}
+
+/* OS selector */
+.ffmpeg-gate__os {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-xs);
+    padding: var(--space-xs);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-muted);
+}
+
+.ffmpeg-gate__os-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-width: 0;
+    min-height: 2rem;
+    padding: 0 var(--space-xs);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-label);
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.ffmpeg-gate__os-tab svg {
+    flex: 0 0 auto;
+    width: 0.9rem;
+    height: 0.9rem;
+}
+
+.ffmpeg-gate__os-tab:hover {
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--color-text-primary);
+}
+
+.ffmpeg-gate__os-tab[aria-pressed="true"] {
+    border-color: var(--color-border);
+    background: var(--color-bg-page);
+    color: var(--color-text-primary);
+    box-shadow: 0 1px 3px rgba(17, 24, 39, 0.12);
+}
+
+.ffmpeg-gate__os-tab[data-detected="true"]::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-accent);
+}
+
+.ffmpeg-gate__os-tab:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+}
+
+/* Install command */
+.ffmpeg-gate__option {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.ffmpeg-gate__command-card {
+    padding: var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-subtle);
+}
+
+.ffmpeg-gate__command-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 0.3rem 0.3rem 0.3rem 0.55rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-page);
+}
+
+.ffmpeg-gate__prompt {
+    flex: 0 0 auto;
+    color: var(--color-text-muted);
+    font-family: Consolas, "Courier New", monospace;
+    font-size: var(--font-size-caption);
+    user-select: none;
+}
+
+.ffmpeg-gate__command {
+    flex: 1;
+    min-width: 0;
+    color: var(--color-text-primary);
+    font-family: Consolas, "Courier New", monospace;
+    font-size: var(--font-size-caption);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.ffmpeg-gate__copy {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.28rem 0.5rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--color-accent);
+    color: var(--color-text-inverse);
+    font-size: var(--font-size-label);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.ffmpeg-gate__copy svg {
+    width: 0.75rem;
+    height: 0.75rem;
+}
+
+.ffmpeg-gate__copy:hover {
+    background: var(--color-accent-hover);
+}
+
+.ffmpeg-gate__copy:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+/* Alternatives */
+.ffmpeg-gate__details {
+    font-size: var(--font-size-caption);
+}
+
+.ffmpeg-gate__details[hidden] {
+    display: none;
+}
+
+.ffmpeg-gate__details summary {
+    padding: 0.1rem;
+    color: var(--color-text-label);
+    font-size: var(--font-size-label);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+}
+
+.ffmpeg-gate__details summary:hover {
+    color: var(--color-text-primary);
+}
+
+.ffmpeg-gate__alternatives {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding-top: var(--space-xs);
+}
+
+.ffmpeg-gate__alternative {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: 0.3rem 0.45rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-subtle);
+}
+
+.ffmpeg-gate__alternative-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.ffmpeg-gate__alternative-label {
+    color: var(--color-text-label);
+    font-size: var(--font-size-label);
+    font-weight: var(--font-weight-medium);
+}
+
+.ffmpeg-gate__alternative code {
+    color: var(--color-text-primary);
+    font-family: Consolas, "Courier New", monospace;
+    font-size: var(--font-size-label);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ffmpeg-gate__alternative .ffmpeg-gate__copy {
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-label);
+}
+
+.ffmpeg-gate__alternative .ffmpeg-gate__copy:hover {
+    background: var(--color-bg-muted);
+    color: var(--color-text-primary);
+}
+
+/* Status */
+.ffmpeg-gate__status {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-caption);
+    line-height: 1.35;
+    text-align: center;
+}
+
+.ffmpeg-gate__status:empty {
+    display: none;
+}
+
+.ffmpeg-gate__status--error {
+    color: #b42318;
+}
+
+.ffmpeg-gate__status--success {
+    color: #067647;
+}
+
+/* Actions */
+.ffmpeg-gate__actions {
+    display: flex;
+    align-items: stretch;
+    gap: var(--space-xs);
+}
+
+.ffmpeg-gate__download {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 2.35rem;
+    padding: 0 0.55rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-page);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition:
+        border-color 0.15s ease,
+        background-color 0.15s ease;
+}
+
+.ffmpeg-gate__download:hover {
+    border-color: var(--color-accent);
+    background: rgba(0, 123, 255, 0.04);
+}
+
+.ffmpeg-gate__download:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+.ffmpeg-gate__download-icon {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 1.45rem;
+    height: 1.45rem;
+    border-radius: var(--radius-sm);
+    background: var(--color-accent);
+    color: var(--color-text-inverse);
+}
+
+.ffmpeg-gate__download-icon svg {
+    width: 0.8rem;
+    height: 0.8rem;
+}
+
+.ffmpeg-gate__download-label {
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-medium);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ffmpeg-gate__button {
+    flex: 0 0 auto;
+    min-height: 2.35rem;
+    padding: 0 0.9rem;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-body);
+    cursor: pointer;
+}
+
+.ffmpeg-gate__button--primary {
+    background: var(--color-accent);
+    color: var(--color-text-inverse);
+    font-weight: var(--font-weight-bold);
+    box-shadow: 0 6px 14px -8px rgba(0, 123, 255, 0.9);
+}
+
+.ffmpeg-gate__button--primary:hover {
+    background: var(--color-accent-hover);
+}
+
+.ffmpeg-gate__button--primary:active {
+    background: var(--color-accent-active);
+}
+
+.ffmpeg-gate__button--primary:disabled {
+    opacity: 0.65;
+    cursor: wait;
+}
+
+.ffmpeg-gate__button:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+

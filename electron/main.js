@@ -1,7 +1,8 @@
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { isVideoPath } = require('./paths');
+const { execFile } = require('child_process');
+const { isVideoPath, resolveFfmpegPath, resolveFfprobePath } = require('./paths');
 const { loadSettings, saveSettings } = require('./settings');
 const { startExport, cancelExport, extractSubtitle } = require('./export-service');
 const { getSubtitleTracks } = require('./subtitles');
@@ -222,6 +223,49 @@ ipcMain.handle('shell:openPath', async (_event, folderPath) => {
         return '';
     }
     return shell.openPath(folderPath);
+});
+
+ipcMain.handle('shell:openExternal', async (_event, url) => {
+    if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
+        return '';
+    }
+    await shell.openExternal(url);
+    return '';
+});
+
+function binaryWorks(binary) {
+    return new Promise((resolve) => {
+        execFile(binary, ['-version'], { windowsHide: true, timeout: 5000 }, (error) => {
+            resolve(!error);
+        });
+    });
+}
+
+ipcMain.handle('ffmpeg:check', async () => {
+    const ffmpegPath = resolveFfmpegPath();
+    const ffprobePath = resolveFfprobePath(ffmpegPath);
+    const [ffmpegOk, ffprobeOk] = await Promise.all([
+        binaryWorks(ffmpegPath),
+        binaryWorks(ffprobePath)
+    ]);
+
+    return {
+        available: ffmpegOk && ffprobeOk,
+        ffmpegPath,
+        ffprobePath,
+        platform:
+            process.platform === 'win32'
+                ? 'windows'
+                : process.platform === 'darwin'
+                    ? 'macos'
+                    : 'linux',
+        ffmpegError: ffmpegOk
+            ? null
+            : 'ffmpeg was not found on PATH or in common install locations.',
+        ffprobeError: ffprobeOk
+            ? null
+            : 'ffprobe was not found on PATH or in common install locations.'
+    };
 });
 
 // --- App lifecycle ---

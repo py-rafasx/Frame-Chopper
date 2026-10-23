@@ -36,6 +36,97 @@
             </div>
         </header>
 
+        <section class="ffmpeg-gate" id="ffmpeg-gate" hidden role="dialog" aria-modal="true"
+            aria-labelledby="ffmpeg-gate-title">
+            <div class="ffmpeg-gate__content">
+                <header class="ffmpeg-gate__header">
+                    <div class="ffmpeg-gate__mark" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="3" y="5.5" width="18" height="13" rx="2.5" stroke="currentColor" stroke-width="1.6" />
+                            <path d="M7.5 5.5v13M16.5 5.5v13M3 9.5h4.5M3 14.5h4.5M16.5 9.5H21M16.5 14.5H21"
+                                stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <div class="ffmpeg-gate__heading">
+                        <h1 class="ffmpeg-gate__title" id="ffmpeg-gate-title">FFmpeg not found</h1>
+                        <p class="ffmpeg-gate__text">Install FFmpeg and ffprobe to extract frames.</p>
+                    </div>
+                </header>
+
+                <div class="ffmpeg-gate__os" role="group" aria-label="Operating system">
+                    <button type="button" class="ffmpeg-gate__os-tab" data-platform="windows" aria-pressed="false">
+                        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path fill="currentColor"
+                                d="M2 3.35 6.9 2.7v4.7H2V3.35Zm0 9.3 4.9.65V8.7H2v3.95Zm5.9-10.1L14 1.8v5.6H7.9V2.55Zm0 6.15H14v5.6l-6.1-.75V8.7Z" />
+                        </svg>
+                        <span>Windows</span>
+                    </button>
+                    <button type="button" class="ffmpeg-gate__os-tab" data-platform="macos" aria-pressed="false">
+                        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path fill="currentColor"
+                                d="M11.4 8.6c0-1.4 1.1-2.1 1.2-2.1-.6-.9-1.6-1-2-1-.8-.1-1.6.5-2 .5-.4 0-1-.5-1.7-.5-.9 0-1.7.5-2.1 1.3-.9 1.6-.2 3.9.7 5.2.5.7 1 1.4 1.8 1.4.7 0 1-.5 1.9-.5s1.1.5 1.9.5c.8 0 1.3-.7 1.8-1.4.6-.8.8-1.6.8-1.7 0 0-1.6-.6-1.6-2.2ZM10.1 4.4c.4-.5.7-1.1.6-1.8-.6 0-1.3.4-1.7.9-.4.4-.7 1.1-.6 1.7.7.1 1.3-.3 1.7-.8Z" />
+                        </svg>
+                        <span>macOS</span>
+                    </button>
+                    <button type="button" class="ffmpeg-gate__os-tab" data-platform="linux" aria-pressed="false">
+                        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <rect x="2.25" y="3.25" width="11.5" height="9.5" rx="1.5" stroke="currentColor"
+                                stroke-width="1.4" />
+                            <path d="M4.75 6.4 6.6 7.9l-1.85 1.5M8.6 9.4h2.65" stroke="currentColor"
+                                stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <span>Linux</span>
+                    </button>
+                </div>
+
+                <div class="ffmpeg-gate__option">
+                    <div class="ffmpeg-gate__command-card">
+                        <div class="ffmpeg-gate__command-row">
+                            <span class="ffmpeg-gate__prompt" aria-hidden="true">$</span>
+                            <code class="ffmpeg-gate__command" id="ffmpeg-gate-command"></code>
+                            <button type="button" class="ffmpeg-gate__copy" id="ffmpeg-gate-copy"
+                                aria-label="Copy install command">
+                                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"
+                                    aria-hidden="true">
+                                    <rect x="5.75" y="5.75" width="7.5" height="7.5" rx="1.5" stroke="currentColor"
+                                        stroke-width="1.4" />
+                                    <path d="M10.25 5.75V4.5A1.5 1.5 0 0 0 8.75 3H4.5A1.5 1.5 0 0 0 3 4.5v4.25a1.5 1.5 0 0 0 1.5 1.5h1.25"
+                                        stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                                </svg>
+                                <span data-copy-label>Copy</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <details class="ffmpeg-gate__details" id="ffmpeg-gate-details">
+                        <summary>Other install options</summary>
+                        <div class="ffmpeg-gate__alternatives" id="ffmpeg-gate-alternatives"></div>
+                    </details>
+                </div>
+
+                <p class="ffmpeg-gate__status" id="ffmpeg-gate-status" role="status" aria-live="polite"></p>
+
+                <div class="ffmpeg-gate__actions">
+                    <button type="button" class="ffmpeg-gate__download" id="ffmpeg-gate-download">
+                        <span class="ffmpeg-gate__download-icon" aria-hidden="true">
+                            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 2.25v7.1m0 0 2.55-2.55M8 9.35 5.45 6.8M3 11.6v.9A1.5 1.5 0 0 0 4.5 14h7a1.5 1.5 0 0 0 1.5-1.5v-.9"
+                                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </span>
+                        <span class="ffmpeg-gate__download-label" id="ffmpeg-gate-download-label">Download for
+                            Windows</span>
+                    </button>
+
+                    <button type="button" class="ffmpeg-gate__button ffmpeg-gate__button--primary"
+                        id="ffmpeg-gate-retry">
+                        Check again
+                    </button>
+                </div>
+            </div>
+        </section>
+
         <section class="media-dropzone" aria-label="Video file drop zone">
             <div class="media-dropzone__video-name">Click or drag and drop a video file here</div>
             <div class="media-dropzone__upload-icon">
@@ -106,6 +197,7 @@
         </footer>
     </main>
     <script src="js/episode.js"></script>
+    <script src="js/ffmpeg-gate.js"></script>
     <script src="js/app.js"></script>
 </body>
 

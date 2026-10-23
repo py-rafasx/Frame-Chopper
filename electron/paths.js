@@ -33,6 +33,27 @@ function resolveFfmpegPath() {
         return bundled;
     }
 
+    const common = [];
+    if (process.platform === 'win32') {
+        if (process.env.LOCALAPPDATA) {
+            common.push(path.join(process.env.LOCALAPPDATA, 'Microsoft', 'WinGet', 'Links', bundledName));
+        }
+        if (process.env.USERPROFILE) {
+            common.push(path.join(process.env.USERPROFILE, 'scoop', 'shims', bundledName));
+        }
+        common.push(path.join('C:\\ProgramData\\chocolatey\\bin', bundledName));
+        common.push(path.join('C:\\ffmpeg\\bin', bundledName));
+    } else {
+        common.push(path.join('/opt/homebrew/bin', bundledName));
+        common.push(path.join('/usr/local/bin', bundledName));
+        common.push(path.join('/usr/bin', bundledName));
+    }
+
+    const installed = common.find((candidate) => fs.existsSync(candidate));
+    if (installed) {
+        return installed;
+    }
+
     // Fall back to ffmpeg on system PATH
     return bundledName;
 }

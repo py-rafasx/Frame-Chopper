@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('api', {
             return null;
         }
     },
+    checkFfmpeg: () => ipcRenderer.invoke('ffmpeg:check'),
+    openUrl: (url) => ipcRenderer.invoke('shell:openExternal', url),
 
     startExport: (options) => ipcRenderer.invoke('export:start', options),
     cancelExport: () => ipcRenderer.invoke('export:cancel'),
