@@ -1,12 +1,14 @@
 name: Release
 
-# Trigger the workflow when a new tag is created
+# Trigger the workflow when a new tag is created, or manually from the
+# Actions tab ("Run workflow") to release the version in package.json.
 # The tag should follow semantic versioning (e.g., v1.6.5, 1.6.5)
 on:
   push:
     tags:
       - 'v*'
       - '*.*.*'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -71,6 +73,11 @@ jobs:
         shell: bash
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          TAURI_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          if [ "$VERSION" != "$TAURI_VERSION" ]; then
+            echo "::error::package.json ($VERSION) and src-tauri/tauri.conf.json ($TAURI_VERSION) versions must match."
+            exit 1
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
 
@@ -94,7 +101,7 @@ jobs:
     name: Publish release
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref_type == 'tag'
+    if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
 
     permissions:
       contents: write
@@ -151,7 +158,8 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', steps.get_version.outputs.version) || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           name: Frame Chopper ${{ steps.get_version.outputs.version }}
           body: |
             ## Frame Chopper ${{ steps.get_version.outputs.version }} — Rust + Tauri
