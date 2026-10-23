@@ -5,11 +5,15 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "tauri": "tauri",
+    "dev:tauri": "tauri dev",
+    "build:tauri": "tauri build"
   },
   "author": "py-rafasx",
   "license": "MIT",
   "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
     "electron": "^42.2.0",
     "electron-builder": "^26.8.1"
   },

@@ -48,6 +48,22 @@ npm install
 npm run build
 ```
 
+### Tauri (Rust) — alternative build
+
+The `feat/tauri` branch contains an alternative backend written in Rust with Tauri 2. It reuses the same HTML/CSS/JS renderer.
+
+Requirements:
+
+- Rust (rustup) with the MSVC toolchain
+- Visual Studio Build Tools with the C++ workload
+- WebView2 runtime (preinstalled on Windows 10/11)
+
+```bash
+npm install
+npm run dev:tauri    # development
+npm run build:tauri  # installer in src-tauri/target/release/bundle
+```
+
 ## Usage
 
 1. **Select Video**: Choose a video file or drag and drop it into the application

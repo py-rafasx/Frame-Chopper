@@ -390,6 +390,25 @@ document.addEventListener('drop', (e) => {
     }
 });
 
+// Native drag & drop under Tauri: the webview event provides the real path.
+window.addEventListener('framechopper:video-dropped', async (event) => {
+    if (isExporting) {
+        return;
+    }
+
+    const filePath = event.detail;
+    if (!filePath) {
+        return;
+    }
+
+    if (!isVideoPath(filePath)) {
+        showError('Please drop a valid video file.');
+        return;
+    }
+
+    await applyVideoSelection({ path: filePath, name: filePath.split(/[/\\]/).pop() });
+});
+
 // ---------------------------------------------------------------------------
 // Output folder input + picker (name only; path is always next to video)
 // ---------------------------------------------------------------------------
