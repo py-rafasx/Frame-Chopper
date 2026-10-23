@@ -85,7 +85,7 @@ jobs:
         run: npm run build:tauri -- --bundles ${{ matrix.bundles }}
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.platform }}-build-${{ steps.get_version.outputs.version }}
           path: |
@@ -125,21 +125,21 @@ jobs:
           echo "Extracted version: $VERSION"
 
       - name: Download Windows build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windows-build-${{ steps.get_version.outputs.version }}
           path: ./release-artifacts/windows
         continue-on-error: true
 
       - name: Download macOS build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: macos-build-${{ steps.get_version.outputs.version }}
           path: ./release-artifacts/macos
         continue-on-error: true
 
       - name: Download Linux build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: linux-build-${{ steps.get_version.outputs.version }}
           path: ./release-artifacts/linux
@@ -156,7 +156,7 @@ jobs:
           find ./release-artifacts/linux -type f -printf '  %p (%s bytes)\n' 2>/dev/null || true
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', steps.get_version.outputs.version) || github.ref_name }}
           target_commitish: ${{ github.sha }}
