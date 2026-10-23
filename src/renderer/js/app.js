@@ -592,7 +592,8 @@ function setupExport() {
         uploadIconImg.style.display = 'block';
 
         if (!wasCanceled && !result?.ok) {
-            showError(result?.error || 'Export failed.');
+            const detail = result?.detail ? `\n\n${result.detail}` : '';
+            showError(`${result?.error || 'Export failed.'}${detail}`);
         }
     });
 }

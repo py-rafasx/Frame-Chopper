@@ -416,8 +416,7 @@ fn build_ffmpeg_args(
     quality: i64,
 ) -> Vec<String> {
     let mut args: Vec<String> = vec![
-        "-hwaccel".into(),
-        "auto".into(),
+        "-nostdin".into(),
         "-threads".into(),
         "0".into(),
         "-thread_type".into(),
@@ -425,8 +424,6 @@ fn build_ffmpeg_args(
         "-i".into(),
         options.video_path.clone(),
         "-an".into(),
-        "-vsync".into(),
-        "0".into(),
     ];
 
     let video_filter = match options.subtitle_index {
@@ -440,17 +437,24 @@ fn build_ffmpeg_args(
         }
     };
 
-    args.extend([
-        "-vf".into(),
-        video_filter,
-        "-c:v".into(),
-        "mjpeg".into(),
-        "-pix_fmt".into(),
-        "yuvj420p".into(),
-    ]);
+    args.extend(["-vf".into(), video_filter]);
 
-    if format == "jpg" {
-        args.extend(["-q:v".into(), quality.to_string()]);
+    if format == "png" {
+        args.extend([
+            "-c:v".into(),
+            "png".into(),
+            "-compression_level".into(),
+            "1".into(),
+        ]);
+    } else {
+        args.extend([
+            "-c:v".into(),
+            "mjpeg".into(),
+            "-pix_fmt".into(),
+            "yuvj420p".into(),
+            "-q:v".into(),
+            quality.to_string(),
+        ]);
     }
 
     args.extend([
@@ -987,5 +991,55 @@ mod tests {
         assert!(is_video_path(Path::new("movie.MKV")));
         assert!(is_video_path(Path::new("clip.mp4")));
         assert!(!is_video_path(Path::new("notes.txt")));
+    }
+
+    fn export_options() -> ExportOptions {
+        ExportOptions {
+            video_path: "input.mp4".into(),
+            output_dir: "out".into(),
+            fps: Some(2.0),
+            quality: Some(2.0),
+            format: Some("jpg".into()),
+            filename: Some("frame".into()),
+            zeropad: Some("%04d".into()),
+            subtitle_index: None,
+        }
+    }
+
+    #[test]
+    fn builds_fast_and_compatible_ffmpeg_args() {
+        let options = export_options();
+        let args = build_ffmpeg_args(&options, Path::new("out/frame%04d.jpg"), 2.0, "jpg", 2);
+
+        // `-vsync` was removed in FFmpeg 9 and `-fps_mode` does not exist
+        // before FFmpeg 5, so neither flag is used.
+        assert!(!args.iter().any(|arg| arg == "-vsync"));
+        assert!(!args.iter().any(|arg| arg == "-fps_mode"));
+        assert!(!args.iter().any(|arg| arg == "-hwaccel"));
+        assert!(args.iter().any(|arg| arg == "-nostdin"));
+        assert!(args
+            .windows(2)
+            .any(|pair| pair[0] == "-threads" && pair[1] == "0"));
+        assert!(args
+            .windows(2)
+            .any(|pair| pair[0] == "-thread_type" && pair[1] == "frame"));
+        assert!(args
+            .windows(2)
+            .any(|pair| pair[0] == "-vf" && pair[1] == "fps=2"));
+        assert!(args
+            .windows(2)
+            .any(|pair| pair[0] == "-c:v" && pair[1] == "mjpeg"));
+        assert!(args
+            .windows(2)
+            .any(|pair| pair[0] == "-q:v" && pair[1] == "2"));
+
+        let png_args = build_ffmpeg_args(&options, Path::new("out/frame%04d.png"), 2.0, "png", 2);
+        assert!(png_args
+            .windows(2)
+            .any(|pair| pair[0] == "-c:v" && pair[1] == "png"));
+        assert!(png_args
+            .windows(2)
+            .any(|pair| pair[0] == "-compression_level" && pair[1] == "1"));
+        assert!(!png_args.iter().any(|arg| arg == "-q:v"));
     }
 }

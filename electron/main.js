@@ -204,7 +204,7 @@ ipcMain.handle('export:start', async (_event, options) => {
         const result = await startExport(options, sendProgress);
         return { ok: true, ...result };
     } catch (err) {
-        return { ok: false, error: err.message || String(err) };
+        return { ok: false, error: err.message || String(err), detail: err.detail };
     }
 });
 

@@ -68,14 +68,17 @@ async function startExport(options, onProgress) {
     const fpsValue = parseFloat(String(options.fps).replace(',', '.')) || 2;
     const fps = Math.max(1, Math.min(60, fpsValue));
     
-    // Build optimized ffmpeg arguments for faster frame extraction
+    // Build ffmpeg arguments optimized for extraction speed. Hardware
+    // decoding is intentionally not used: frames must be copied back to
+    // system memory for JPEG/PNG encoding, which is slower than software
+    // decoding in practice. Neither `-vsync` nor `-fps_mode` is used so the
+    // command works with both old and new FFmpeg releases.
     const args = [
-        '-hwaccel', 'auto',                             // Try to use hardware acceleration if available
+        '-nostdin',
         '-threads', '0',                                // Use all available CPU cores
         '-thread_type', 'frame',                        // Parallelize frame processing (better multi-core usage)
         '-i', options.videoPath,                        // Input video file
         '-an',                                          // Disable audio stream (not needed for frame extraction)
-        '-vsync', '0',                                  // Disable frame synchronization (faster, direct frame extraction)
     ];
 
     // Build video filter with optional subtitle burn-in
@@ -88,14 +91,19 @@ async function startExport(options, onProgress) {
         args.push('-sn');
     }
 
-    args.push(
-        '-vf', videoFilter,                             // FPS filter to extract frames at specified rate
-        '-c:v', 'mjpeg',                                // Use MJPEG codec explicitly (faster JPEG encoding)
-        '-pix_fmt', 'yuvj420p'                          // Pixel format optimized for JPEG (faster conversion)
-    );
+    args.push('-vf', videoFilter);                      // FPS filter to extract frames at specified rate
 
-    if (options.format === 'jpg') {
-        args.push('-q:v', String(mapQuality(options.quality)));
+    if (options.format === 'png') {
+        args.push(
+            '-c:v', 'png',
+            '-compression_level', '1'                   // Faster PNG encoding; still lossless
+        );
+    } else {
+        args.push(
+            '-c:v', 'mjpeg',                            // Use MJPEG codec explicitly (faster JPEG encoding)
+            '-pix_fmt', 'yuvj420p',                     // Pixel format optimized for JPEG (faster conversion)
+            '-q:v', String(mapQuality(options.quality))
+        );
     }
 
     args.push(
@@ -167,7 +175,11 @@ async function startExport(options, onProgress) {
                 if (tail) {
                     console.log(`Last ffmpeg output:\n${tail}\n`);
                 }
-                reject(new Error(`ffmpeg exited with code ${code}`));
+                const error = new Error(`ffmpeg exited with code ${code}`);
+                if (tail) {
+                    error.detail = tail;
+                }
+                reject(error);
             }
         });
     });
